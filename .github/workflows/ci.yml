@@ -1,0 +1,78 @@
+﻿name: CI — build & smoke tests
+
+on:
+  push:
+    branches: ["main","master"]
+  pull_request:
+    branches: ["main","master"]
+  workflow_dispatch:
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+    env:
+      COMPOSE_PROJECT_NAME: eva-eco-ci
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+
+      - name: Build orchestrator image
+        run: docker build -t eva-eco-orchestrator ./orchestrator
+
+      - name: Build mocks image
+        run: docker build -t eva-eco-mocks ./mocks
+
+      - name: Start compose stack (detached)
+        run: |
+          docker-compose -f docker-compose.yml up -d --build
+        env:
+          DOCKER_BUILDKIT: 1
+
+      - name: Wait for services
+        run: |
+          for i in {1..30}; do
+            curl -sS http://localhost:8080/health && break || sleep 2
+          done
+
+      - name: Run smoke E2E request
+        run: |
+          python3 - <<'PY'
+          import requests, json
+          body = {
+            "job": "daily_summary",
+            "request_id": "ci-smoke-001",
+            "initiator": "ci",
+            "date_from": "2025-11-28",
+            "date_to": "2025-11-28",
+            "campaign_ids": [101],
+            "channels": ["email"]
+          }
+          r = requests.post("http://localhost:8080/run", json=body, timeout=60)
+          print("HTTP", r.status_code)
+          print(r.json())
+          if r.status_code != 200:
+            raise SystemExit("Smoke test failed")
+          j = r.json()
+          if not j.get("provenance") or len(j.get("provenance")) < 6:
+            raise SystemExit("Insufficient provenance in final_report")
+          print("Smoke OK")
+          PY
+
+      - name: Collect orchestrator logs
+        run: docker logs $(docker ps --filter "ancestor=eva-eco-orchestrator" --format '{{.Names}}' | head -n1) --tail 200 || true
+
+      - name: Tear down compose
+        if: always()
+        run: docker-compose -f docker-compose.yml down --volumes --remove-orphans

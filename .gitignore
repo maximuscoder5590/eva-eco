@@ -1,0 +1,11 @@
+﻿# Logs
+orchestrator/logs/
+*.log
+
+# Python / env
+__pycache__/
+.env
+
+# Docker
+**/node_modules/
+.vscode/

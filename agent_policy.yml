@@ -1,0 +1,23 @@
+﻿mdc:
+  partial_retries: 0
+  partial_is_error: false
+
+mar:
+  partial_retries: 2
+  partial_is_error: false
+
+cfa:
+  partial_retries: 1
+  partial_is_error: false
+
+cps:
+  partial_retries: 1
+  partial_is_error: false
+
+mbo:
+  partial_retries: 0
+  partial_is_error: false
+
+ftm:
+  partial_retries: 0
+  partial_is_error: false

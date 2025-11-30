@@ -1,0 +1,4 @@
+﻿services:
+  orchestrator:
+    volumes:
+      - ./agent_policy.yml:/app/agent_policy.yml:ro

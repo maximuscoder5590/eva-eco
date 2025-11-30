@@ -1,0 +1,45 @@
+﻿version: "3.8"
+services:
+  orchestrator:
+    build: ./orchestrator
+    ports:
+      - "8080:8080"
+    environment:
+      - MOCK_HOST=mdc
+      - HMAC_KEY=local-secret
+  mdc:
+    build: ./mocks
+    environment:
+      - AGENT_NAME=MDC
+    ports:
+      - "8101:80"
+  mar:
+    build: ./mocks
+    environment:
+      - AGENT_NAME=MAR
+    ports:
+      - "8102:80"
+  cfa:
+    build: ./mocks
+    environment:
+      - AGENT_NAME=CFA
+    ports:
+      - "8103:80"
+  cps:
+    build: ./mocks
+    environment:
+      - AGENT_NAME=CPS
+    ports:
+      - "8104:80"
+  mbo:
+    build: ./mocks
+    environment:
+      - AGENT_NAME=MBO
+    ports:
+      - "8105:80"
+  ftm:
+    build: ./mocks
+    environment:
+      - AGENT_NAME=FTM
+    ports:
+      - "8106:80"
